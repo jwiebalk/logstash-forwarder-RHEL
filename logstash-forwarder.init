@@ -1,0 +1,74 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          skeleton
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Example initscript
+# Description:       This file should be used to construct scripts to be
+#                    placed in /etc/init.d.
+### END INIT INFO
+
+# Author: Jordan Sissel <jordan.sissel@dreamhost.com>
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+DESC="log shipper"
+NAME=logstash-forwarder
+DAEMON=/opt/logstash-forwarder/bin/logstash-forwarder
+DAEMON_ARGS="-config /opt/logstash-forwarder/conf/logstash-forwarder.conf -spool-size 100 -log-to-syslog"
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+COMMAND="exec $DAEMON $DAEMON_ARGS"
+
+. /etc/rc.d/init.d/functions
+
+RETVAL=0
+
+do_start() {
+	echo -n "Starting logstash-forarder: "
+      [ -f $DAEMON ] || exit 1	
+	daemon $DAEMON $DAEMON_ARGS &
+	RETVAL=$?
+      echo
+      [ $RETVAL -eq 0 ] && touch /var/lock/subsys/$NAME
+
+}
+
+do_stop()
+{
+      echo -n "Shutting down logstash-forwarder:"
+      killproc logstash-forwarder
+      RETVAL=$?
+      echo
+      [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/$NAME
+
+}
+
+case "$1" in
+  start)
+    do_start
+	RETVAL=$?
+    ;;
+  stop)
+    	do_stop
+	RETVAL=$?
+    ;;
+  status)
+	status logstash-forwarder
+        RETVAL=$?
+    ;;
+  restart|force-reload)
+	$0 stop
+        $0 start
+        RETVAL=$?
+    ;;
+  *)
+    echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+    exit 3
+    ;;
+esac
+
+exit $RETVAL
+
